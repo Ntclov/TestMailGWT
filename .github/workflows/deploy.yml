@@ -19,10 +19,14 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      run: mvn clean install -DskipTests
+      # Мы добавляем -f mail/pom.xml, чтобы Maven знал, куда заходить
+      run: mvn clean install -DskipTests -f mail/pom.xml
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        folder: mail/mail-client # Убедитесь, что путь совпадает с вашей папкой сборки
+        # Здесь указываем путь к папке, где GWT создаст готовый JavaScript
+        # После сборки это обычно папка target внутри клиентского модуля
+        folder: mail/mail-client/target/mail-client-2.13.0-SNAPSHOT
         branch: gh-pages
+        
