@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main", "master" ]
 
-# Разрешаем скрипту записывать данные в ветку gh-pages
 permissions:
   contents: write
 
@@ -24,25 +23,28 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      # Собираем проект, указывая путь к pom.xml в папке mail
+      # Собираем проект
       run: mvn clean install -DskipTests -f mail/pom.xml
 
-    - name: Find Deploy Folder
+    - name: Prepare Files for Deployment
       id: find_folder
-      # Ищем папку сборки (например, mail-client-1.0-SNAPSHOT)
-      # и проверяем, есть ли внутри папка модуля 'mail'
       run: |
+        # Находим папку сборки
         BASE_PATH=$(find mail/mail-client/target -maxdepth 1 -type d -name "mail-client-*" | head -n 1)
-        if [ -d "$BASE_PATH/mail" ]; then
-          echo "DEPLOY_FOLDER=$BASE_PATH/mail" >> $GITHUB_OUTPUT
-        else
-          echo "DEPLOY_FOLDER=$BASE_PATH" >> $GITHUB_OUTPUT
+        
+        # Заходим внутрь и ищем главный HTML файл (Mail.html или другой)
+        # Копируем его как index.html, чтобы GitHub Pages открывал его по умолчанию
+        if [ -f "$BASE_PATH/Mail.html" ]; then
+          cp "$BASE_PATH/Mail.html" "$BASE_PATH/index.html"
+        elif [ -f "$BASE_PATH/mail/Mail.html" ]; then
+          cp "$BASE_PATH/mail/Mail.html" "$BASE_PATH/index.html"
         fi
+        
+        echo "DEPLOY_FOLDER=$BASE_PATH" >> $GITHUB_OUTPUT
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        # Используем найденную папку, где лежат .html и .js файлы
         folder: ${{ steps.find_folder.outputs.DEPLOY_FOLDER }}
         branch: gh-pages
         clean: true
