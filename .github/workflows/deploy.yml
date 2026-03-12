@@ -24,7 +24,6 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        # Если сборка пройдет, но деплой упадет — проверим этот путь
-        folder: mail/mail-client/target/mail-client-2.13.0-SNAPSHOT
+        # Звездочка (*) заставит скрипт найти любую папку, начинающуюся на mail-client-
+        folder: mail/mail-client/target/mail-client-*/
         branch: gh-pages
-        
