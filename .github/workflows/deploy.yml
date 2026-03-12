@@ -23,28 +23,27 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      # Собираем проект
+      # Собираем весь проект целиком
       run: mvn clean install -DskipTests -f mail/pom.xml
 
-    - name: Prepare Files for Deployment
+    - name: Prepare Files
       id: find_folder
       run: |
-        # Находим папку сборки
-        BASE_PATH=$(find mail/mail-client/target -maxdepth 1 -type d -name "mail-client-*" | head -n 1)
+        # Результат сборки GWT обычно оказывается в target модуля mail-server в виде .war или папки
+        # Находим папку сборки сервера, где лежат объединенные файлы
+        BASE=$(find mail/mail-server/target -maxdepth 1 -type d -name "mail-server-*" | head -n 1)
         
-        # Заходим внутрь и ищем главный HTML файл (Mail.html или другой)
-        # Копируем его как index.html, чтобы GitHub Pages открывал его по умолчанию
-        if [ -f "$BASE_PATH/Mail.html" ]; then
-          cp "$BASE_PATH/Mail.html" "$BASE_PATH/index.html"
-        elif [ -f "$BASE_PATH/mail/Mail.html" ]; then
-          cp "$BASE_PATH/mail/Mail.html" "$BASE_PATH/index.html"
+        # Если есть Mail.html, делаем его копию как index.html для работы корня сайта
+        if [ -f "$BASE/Mail.html" ]; then
+          cp "$BASE/Mail.html" "$BASE/index.html"
         fi
         
-        echo "DEPLOY_FOLDER=$BASE_PATH" >> $GITHUB_OUTPUT
+        echo "DEPLOY_FOLDER=$BASE" >> $GITHUB_OUTPUT
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
+        # Публикуем содержимое папки сервера, так как там лежат и клиентские скрипты, и HTML
         folder: ${{ steps.find_folder.outputs.DEPLOY_FOLDER }}
         branch: gh-pages
         clean: true
