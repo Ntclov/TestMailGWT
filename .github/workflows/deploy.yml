@@ -11,19 +11,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up JDK 17  # Было 11, ставим 17
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '17' # Здесь тоже меняем на 17
+        java-version: '17'
         distribution: 'temurin'
         cache: maven
 
     - name: Build with Maven
       run: mvn clean install -DskipTests -f mail/pom.xml
 
+    - name: Find Deploy Folder
+      # Этот скрипт ищет папку, которая начинается на mail-client- в target
+      id: find_folder
+      run: |
+        FOLDER_PATH=$(find mail/mail-client/target -maxdepth 1 -type d -name "mail-client-*" | head -n 1)
+        echo "DEPLOY_FOLDER=$FOLDER_PATH" >> $GITHUB_OUTPUT
+
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        # Звездочка (*) заставит скрипт найти любую папку, начинающуюся на mail-client-
-        folder: mail/mail-client/target/mail-client-*/
+        # Используем найденный путь из предыдущего шага
+        folder: ${{ steps.find_folder.outputs.DEPLOY_FOLDER }}
         branch: gh-pages
+        
