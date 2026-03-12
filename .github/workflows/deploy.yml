@@ -4,12 +4,17 @@ on:
   push:
     branches: [ "main", "master" ]
 
+# Разрешаем скрипту записывать данные в ветку gh-pages
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
     
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -19,19 +24,26 @@ jobs:
         cache: maven
 
     - name: Build with Maven
+      # Собираем проект, указывая путь к pom.xml в папке mail
       run: mvn clean install -DskipTests -f mail/pom.xml
 
     - name: Find Deploy Folder
-      # Этот скрипт ищет папку, которая начинается на mail-client- в target
       id: find_folder
+      # Ищем папку сборки (например, mail-client-1.0-SNAPSHOT)
+      # и проверяем, есть ли внутри папка модуля 'mail'
       run: |
-        FOLDER_PATH=$(find mail/mail-client/target -maxdepth 1 -type d -name "mail-client-*" | head -n 1)
-        echo "DEPLOY_FOLDER=$FOLDER_PATH" >> $GITHUB_OUTPUT
+        BASE_PATH=$(find mail/mail-client/target -maxdepth 1 -type d -name "mail-client-*" | head -n 1)
+        if [ -d "$BASE_PATH/mail" ]; then
+          echo "DEPLOY_FOLDER=$BASE_PATH/mail" >> $GITHUB_OUTPUT
+        else
+          echo "DEPLOY_FOLDER=$BASE_PATH" >> $GITHUB_OUTPUT
+        fi
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        # Используем найденный путь из предыдущего шага
+        # Используем найденную папку, где лежат .html и .js файлы
         folder: ${{ steps.find_folder.outputs.DEPLOY_FOLDER }}
         branch: gh-pages
+        clean: true
         
